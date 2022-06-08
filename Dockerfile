@@ -8,4 +8,4 @@ WORKDIR /root/face_recognitition
 COPY . /root/face_recognitition
 RUN cd /root/face_recognitition
 RUN mkdir files_output
-RUN python3 main.py
+CMD ./start.sh
