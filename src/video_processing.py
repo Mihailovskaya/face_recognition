@@ -6,7 +6,6 @@ import datetime
 from configparser import ConfigParser
 import torch
 
-# посмотреть что там со скобочками
 class Video_processing:
     def __init__(self,
                  config_path,
@@ -24,7 +23,6 @@ class Video_processing:
         self._output = []
         # определяем вектор лица с картинки
         face1_vector = self._model_face.detect_face(image_path=image_path, save_path=save_path_face1)
-        # добавить больше проверок
         if face1_vector is None:
             logging.error(f'Лицо с фото {image_path} не прочитано')
             assert False, f"Лицо с фото {image_path} не прочитано"
@@ -118,3 +116,5 @@ class Video_processing:
             end_time = str(datetime.timedelta(milliseconds=end_millisec))
             time_output.append([start_time, end_time])
         return time_output
+
+
