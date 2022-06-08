@@ -5,15 +5,27 @@ import logging
 import datetime
 from configparser import ConfigParser
 import torch
+import json
 
 class Video_processing:
     def __init__(self,
                  config_path,
-                 skipped_seconds=None
+                 skipped_seconds=None,
+                 smoothing_threshold=None
                  ):
+        """
+
+        :param config_path: конфигурационный файл
+        :param skipped_seconds: сколько секунд пропускаем между проверками, если 0, то будет обробатываться каждый фрейм
+        :param smoothing_threshold: сколько максимально может быть skipped_seconds между отрезками времени
+        например, если skipped_seconds = 2, smoothing_threshold = 3,
+        то между отрезками времени должно быть не бльше 6 секунд, тогда их можно соединить
+        smothing_threshold не может быть нулем!
+        """
         config = ConfigParser()
         config.read(config_path)
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self._smoothing_threshold = smoothing_threshold or config.getint('video', 'smoothing_threshold')
         self._skipped_seconds = skipped_seconds or config.getint('video', 'skipped_seconds')
         self._model_face = Model_inference_face(config_path=config_path, device=device)
         self._model_person = Model_inference_person(config_path=config_path, device=device)
@@ -56,12 +68,12 @@ class Video_processing:
                             similar, distance = self._model_face.compare_faces(face2_vectors[i], face1_vector[0])
                             if similar:
                                 self._add_frame_to_output(frame_id, millisec, frame_skipping)
-                                logging.info(f'Frame_id:{frame_id}, mlsec{millisec}. '
+                                logging.info(f'Frame_id:{frame_id}, mlsec:{millisec}. '
                                              f'Лицо: +, совпадение: + . prob:{prob[i]}')
                                 # cv2.imwrite(f'video_scrin/{frame_id}_меньше_порога.jpg', frame)
                                 break
                         if not similar:
-                            logging.info(f'Frame_id:{frame_id}, mlsec{millisec}. '
+                            logging.info(f'Frame_id:{frame_id}, mlsec:{millisec}. '
                                          f'Лицо: +, совпадение: - . distance:{distance}')
                             # cv2.imwrite(f'video_scrin/{frame_id}больше1.jpg', frame)
             # добавить обработку нечитающихся фреймов
@@ -69,11 +81,11 @@ class Video_processing:
                 break
         cap.release()
         cv2.destroyAllWindows()
-        logging.info(self._output)
-        time_output = self._output_to_time(self._output)
+        time_output, frame_output = self._output_to_time(self._output)
         print(time_output)
+        logging.info(frame_output)
         logging.info(time_output)
-        return time_output
+        return time_output, frame_output
 
     # проверяет есть ли человек на фото, если есть, то заносит в output
     def _check_person(self, frame, frame_id, millisec, frame_skipping):
@@ -84,10 +96,10 @@ class Video_processing:
         # cv2.imwrite(f'video_scrin/{frame_id}.jpg', img)
         if is_person:
             self._add_frame_to_output(frame_id, millisec, frame_skipping)
-            logging.info(f'Frame_id:{frame_id}, mlsec{millisec}. '
+            logging.info(f'Frame_id:{frame_id}, mlsec:{millisec}. '
                          f'Лицо: - , челвоек: +')
         else:
-            logging.info(f'Millisec:{frame_id}, mlsec{millisec}. '
+            logging.info(f'Frame_id:{frame_id}, mlsec:{millisec}. '
                          f'Лицо: -, челвоек: -')
 
     # добавляет фрейм в output. если новый фрейм отличается от последнего в списке на frame_skipping,
@@ -101,7 +113,7 @@ class Video_processing:
             last_frame_id = len(self._output) - 1
             last_frame = self._output[last_frame_id][1]
 
-            if frame - last_frame == frame_skipping:
+            if frame - last_frame <= frame_skipping*self._smoothing_threshold:
                 self._output[last_frame_id][1] = frame
                 self._output[last_frame_id][3] = millisec
             else:
@@ -109,12 +121,15 @@ class Video_processing:
 
     def _output_to_time(self, output):
         time_output = []
+        frame_output = []
         for i in range(len(output)):
             start_millisec = output[i][2]
             start_time = str(datetime.timedelta(milliseconds=start_millisec))
             end_millisec = output[i][3]
             end_time = str(datetime.timedelta(milliseconds=end_millisec))
+
+            start_frame = output[i][0]
+            end_frame = output[i][1]
             time_output.append([start_time, end_time])
-        return time_output
-
-
+            frame_output.append([start_frame, end_frame])
+        return time_output, frame_output

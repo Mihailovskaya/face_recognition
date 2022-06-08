@@ -14,6 +14,13 @@ class Model_inference_face:
                  face_confidence=None,
                  similarity_threshold=None
                  ):
+        """
+        :param config_path: путь к конфигурационному файлу
+        :param device: cpu или gpu
+        :param pretrained: датасет на котором обучалась InceptionResnetV1. VGGFace2 или CASIA-Webface
+        :param face_confidence: порог confidence для вывода лица из модели
+        :param similarity_threshold: порог похожести: обычно меньше 1 - лица схожи
+        """
         config = ConfigParser()
         config.read(config_path)
 
