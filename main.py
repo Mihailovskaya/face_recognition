@@ -15,6 +15,10 @@ if __name__ == '__main__':
     with open('files_output/time_output.json', 'w') as js:
         text = json.dumps({"time_output": time_output, "frame_output": frame_output})
         js.write(text)
+    #извлечение видео
+    video_processing.cropped_video(video_path='files/2.mp4',
+                                   json_path='files_output/time_output.json',
+                                   save_path='files_output/cropped_video.mp4')
 
 
 

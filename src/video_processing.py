@@ -133,3 +133,57 @@ class Video_processing:
             time_output.append([start_time, end_time])
             frame_output.append([start_frame, end_frame])
         return time_output, frame_output
+
+    # делаем новое видео
+    def cropped_video(self, video_path, json_path, save_path):
+        cropped_video = None
+        with open(json_path, 'r') as f:
+            file = json.load(f)
+        # выбираем фреймы
+        frames = file["frame_output"]
+        # начинаем читать видео
+        cap = cv2.VideoCapture(video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        # id текущего отрезка
+        frames_id = 0
+        # id последнего отрезка
+        frames_id_last = len(frames)-1
+        # текущий номер фрейма в текущем отрезке
+        frame_id_cur = frames[frames_id][0]
+        # последний номер фрейма в текущем отрезке
+        last_frame_id_cur = frames[frames_id][1]
+        while cap.isOpened():
+            ret, frame = cap.read()
+            # создаем видео
+            if cropped_video is None:
+                cropped_video = self._create_video(frame, fps, save_path)
+            if ret:
+                frame_id = int(cap.get(1)) - 1  # текущий фрейм обробатываемого видео
+                # добавляем кадр, если текущий фрейм обробатываемого видео совпадает с текущим фреймом в текущем отрезке
+                if frame_id == frame_id_cur:
+                    cropped_video.write(frame)
+                    # если это не последний фрейм в текущем отрезке, то переходим к следующему
+                    if frame_id_cur != last_frame_id_cur:
+                        frame_id_cur = frame_id_cur + 1
+                    # если это последний фрейм в текущем отрезке, то
+                    else:
+                        # если отрезки закончились, выходим
+                        if frames_id == frames_id_last:
+                            break
+                        # если не закончились, то переходим к новому фрейму
+                        else:
+                            frames_id = frames_id+1
+                            frame_id_cur = frames[frames_id][0]
+                            last_frame_id_cur = frames[frames_id][1]
+
+    # инициализируем видео
+    def _create_video(self, frame, fps, save_path):
+        height = frame.shape[0]
+        width = frame.shape[1]
+        cropped_video = cv2.VideoWriter(save_path,
+                                        cv2.VideoWriter_fourcc(*'XVID'),
+                                        fps,
+                                        (width, height))
+        return cropped_video
+
+
