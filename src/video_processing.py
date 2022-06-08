@@ -44,7 +44,6 @@ class Video_processing:
                 frame_id = int(cap.get(1)) - 1  # CAP_PROP_POS_FRAMES
                 millisec = cap.get(0)  # CAP_PROP_POS_MSEC
                 if frame_id % frame_skipping == 0:
-                    print(frame_id)
                     face2_vectors, prob = self._model_face.detect_face(image=frame,
                                                                        # save_path=f'files/video_scrin/{frame_id}.jpg',
                                                                        return_prob=True)
@@ -72,7 +71,6 @@ class Video_processing:
                 break
         cap.release()
         cv2.destroyAllWindows()
-        print(self._output)
         logging.info(self._output)
         time_output = self._output_to_time(self._output)
         print(time_output)
