@@ -1,0 +1,13 @@
+# pip install -qr requirements.txt
+
+logging
+json
+datetime
+configparser
+opencv-python==4.5.4.58
+numpy==1.21.5
+opencv-python==4.1.2
+facenet-pytorch==2.5.2
+torch==1.11.0
+torchvision==0.12.0
+
